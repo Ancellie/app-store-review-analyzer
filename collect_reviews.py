@@ -6,6 +6,9 @@ import sys
 from collector import AppStoreReviewClient, ReviewCollectionError
 from collector.fetchlayer_client import FetchLayerReviewClient
 
+# Імпортуємо функцію з нашого сусіднього файлу sentiment.py
+from processing.sentiment import attach_sentiment
+
 _PROVIDERS = {
     "playwright": AppStoreReviewClient,
     "fetchlayer": FetchLayerReviewClient,
@@ -22,8 +25,7 @@ def main() -> int:
         "--provider",
         choices=list(_PROVIDERS.keys()),
         default="fetchlayer",
-        help="Review provider to use: 'playwright' (Playwright/Apple page) or "
-             "'fetchlayer' (FetchLayer API, default)",
+        help="Review provider to use: 'playwright' or 'fetchlayer' (default)",
     )
     args = parser.parse_args()
 
@@ -43,21 +45,34 @@ def main() -> int:
         return 1
 
     print(f"Collected {len(reviews)} reviews for app_id={args.app_id} (country={args.country})")
+
     if args.provider == "playwright":
         print("Note: the App Store page exposes only the most-helpful sample, not the full history.")
 
+    # 1. Перетворюємо зібрані об'єкти на словники
+    review_dicts = [r.model_dump(mode="json") for r in reviews]
+
+    # 2. Викликаємо функцію з файлу sentiment.py для збагачення словників
+    enriched_reviews = attach_sentiment(review_dicts, text_field="review")
+
+    # 3. Вивід результату
     if args.out:
         with open(args.out, "w", encoding="utf-8") as f:
-            json.dump([r.model_dump(mode="json") for r in reviews], f, indent=2, ensure_ascii=False)
+            json.dump(enriched_reviews, f, indent=2, ensure_ascii=False)
         print(f"Saved to {args.out}")
     else:
-        for review in reviews[:3]:
+        for review in enriched_reviews[:10]:
             print("-" * 40)
-            print(f"Rating: {review.rating}")
-            print(f"Title:  {review.title}")
-            print(f"Author: {review.author}")
-            print(f"Date:   {review.date}")
-            print(f"Text:   {review.text[:200]}")
+            print(f"Rating:    {review.get('rating')}")
+            print(f"Title:     {review.get('title')}")
+            print(f"Author:    {review.get('author')}")
+            print(f"Date:      {review.get('date')}")
+            print(f"Text:      {review.get('review', '')[:200]}")
+
+            # Виводимо дані тональності
+            sentiment_label = review["sentiment"]["label"]
+            sentiment_score = review["sentiment"]["compound"]
+            print(f"Sentiment: {sentiment_label.upper()} (score: {sentiment_score})")
 
     return 0
 
