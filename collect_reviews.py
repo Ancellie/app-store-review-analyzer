@@ -4,6 +4,12 @@ import logging
 import sys
 
 from collector import AppStoreReviewClient, ReviewCollectionError
+from collector.fetchlayer_client import FetchLayerReviewClient
+
+_PROVIDERS = {
+    "playwright": AppStoreReviewClient,
+    "fetchlayer": FetchLayerReviewClient,
+}
 
 
 def main() -> int:
@@ -12,11 +18,23 @@ def main() -> int:
     parser.add_argument("--country", default="us", help="Two-letter storefront code (default: us)")
     parser.add_argument("--limit", type=int, default=100, help="Max reviews to collect (default: 100)")
     parser.add_argument("--out", help="Optional path to write reviews as JSON")
+    parser.add_argument(
+        "--provider",
+        choices=list(_PROVIDERS.keys()),
+        default="fetchlayer",
+        help="Review provider to use: 'playwright' (Playwright/Apple page) or "
+             "'fetchlayer' (FetchLayer API, default)",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-    client = AppStoreReviewClient()
+    client_cls = _PROVIDERS[args.provider]
+    try:
+        client = client_cls()
+    except ValueError as exc:
+        print(f"Configuration error: {exc}", file=sys.stderr)
+        return 1
 
     try:
         reviews = client.get_reviews(app_id=args.app_id, limit=args.limit, country=args.country)
@@ -25,7 +43,8 @@ def main() -> int:
         return 1
 
     print(f"Collected {len(reviews)} reviews for app_id={args.app_id} (country={args.country})")
-    print("Note: the App Store page exposes only the most-helpful sample, not the full history.")
+    if args.provider == "playwright":
+        print("Note: the App Store page exposes only the most-helpful sample, not the full history.")
 
     if args.out:
         with open(args.out, "w", encoding="utf-8") as f:
