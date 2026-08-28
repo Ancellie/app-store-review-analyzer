@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 from pathlib import Path
 from typing import Any
 
@@ -11,14 +10,18 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 # Імпорти з ваших модулів
-from collector import ReviewCollectionError
 from collector.fetchlayer_client import FetchLayerReviewClient
 from processing.loader import load_reviews
 from processing.metrics import compute_metrics
+from processing.keywords import analyze_negative_keywords_and_phrases
+from processing.spacy_keywords import analyze_negative_keywords_and_phrases_spacy
+from processing.keybert_keywords import analyze_negative_keywords_and_phrases_keybert
+
+# Імпорти всіх 4 методів видобування ключових слів
 from processing.sentiment import attach_sentiment
 from processing.transformer_sentiment import attach_sentiment_transformer
-from processing.keywords import analyze_negative_keywords_and_phrases, NegativeTermsReport
-from processing.llm_insights import generate_insight_report, InsightReport, LLMInsightsError
+from processing.llm_sentiment import attach_sentiment_llm
+from processing.llm_insights import generate_insight_report
 
 # Налаштування шляхів
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -33,7 +36,7 @@ app = FastAPI(
 )
 
 
-# --- Допоміжні функції з вашого коду ---
+# --- Допоміжні функції ---
 
 def save_json(path: Path, data: Any) -> None:
     path.write_text(json.dumps(data, indent=4, ensure_ascii=False), encoding="utf-8")
@@ -87,7 +90,15 @@ def run_pipeline(app_id: str, country: str, limit: int) -> None:
         metrics = compute_metrics(records)
         records = attach_sentiment(records)
         records = attach_sentiment_transformer(records)
-        keyword_report = analyze_negative_keywords_and_phrases(records)
+        records = attach_sentiment_llm(records)
+
+        # Запуск усіх трьох методів видобування
+        keyword_reports = {
+            "tfidf": analyze_negative_keywords_and_phrases(records),
+            "spacy": analyze_negative_keywords_and_phrases_spacy(records),
+            "keybert": analyze_negative_keywords_and_phrases_keybert(records),
+        }
+
         insight_report = generate_insight_report(records)
 
         # 4. Saving Results
@@ -95,17 +106,30 @@ def run_pipeline(app_id: str, country: str, limit: int) -> None:
         save_json(RESULTS_DIR / "metrics.json", metrics)
         save_json(RESULTS_DIR / "sentiment_vader.json", _build_sentiment_export(records, "sentiment"))
         save_json(RESULTS_DIR / "sentiment_transformer.json", _build_sentiment_export(records, "sentiment_transformer"))
-        save_json(RESULTS_DIR / "negative_keywords.json", keyword_report.model_dump())
+        save_json(RESULTS_DIR / "sentiment_llm.json", _build_sentiment_export(records, "sentiment_llm"))
+
+        # Збереження звітів ключових слів в окремі файли
+        for name, report in keyword_reports.items():
+            save_json(RESULTS_DIR / f"negative_keywords_{name}.json", report.model_dump())
+
         save_json(RESULTS_DIR / "insights.json", insight_report.model_dump())
 
+        # Формування загального звіту
         analysis = {
             "metrics": metrics,
             "sentiment_distribution": {
                 "vader": _label_distribution(records, "sentiment"),
                 "transformer": _label_distribution(records, "sentiment_transformer"),
+                "llm": _label_distribution(records, "sentiment_llm"),
             },
-            "top_negative_keywords": [k.model_dump() for k in keyword_report.keywords[:5]],
-            "top_negative_phrases": [p.model_dump() for p in keyword_report.phrases[:5]],
+            "top_negative_keywords": {
+                name: [k.model_dump() for k in report.keywords[:5]]
+                for name, report in keyword_reports.items()
+            },
+            "top_negative_phrases": {
+                name: [p.model_dump() for p in report.phrases[:5]]
+                for name, report in keyword_reports.items()
+            },
             "insights_summary": {
                 "summary": insight_report.summary,
                 "problem_areas": [i.problem_area for i in insight_report.insights],
@@ -134,7 +158,6 @@ def collect_reviews(app_id: str, req: CollectRequest, background_tasks: Backgrou
     """
     Triggers the review collection and analysis pipeline in the background.
     """
-    # Зверніть увагу: тепер ми передаємо просто app_id, а не req.app_id
     background_tasks.add_task(run_pipeline, app_id, req.country, req.limit)
 
     return {
@@ -147,7 +170,7 @@ def collect_reviews(app_id: str, req: CollectRequest, background_tasks: Backgrou
 @app.get("/api/analysis", summary="Get metrics and insights")
 def get_analysis():
     """
-    Returns the calculated metrics and LLM insights from the most recent run.
+    Returns the calculated metrics and aggregated insights from the most recent run.
     """
     analysis_file = RESULTS_DIR / "analysis.json"
 
@@ -158,6 +181,27 @@ def get_analysis():
         )
 
     with open(analysis_file, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+@app.get("/api/keywords/{method}", summary="Get negative keywords by extraction method")
+def get_keywords_by_method(method: str):
+    """
+    Returns the full keyword extraction report for a specific method.
+    Valid methods: 'tfidf', 'spacy', 'keybert'.
+    """
+    if method not in ["tfidf", "spacy", "keybert"]:
+        raise HTTPException(status_code=400, detail="Invalid method. Choose from: tfidf, spacy, keybert.")
+
+    keywords_file = RESULTS_DIR / f"negative_keywords_{method}.json"
+
+    if not keywords_file.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Keyword results for '{method}' not found. Please run the collection endpoint first."
+        )
+
+    with open(keywords_file, "r", encoding="utf-8") as f:
         return json.load(f)
 
 

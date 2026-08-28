@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
 
 
-_MAX_NEGATIVE_REVIEWS = 40
+_MAX_NEGATIVE_REVIEWS = 50
 _MAX_EVIDENCE_CHARS = 300
 _MAX_RETRIES = 3
 _REQUEST_TIMEOUT_SECONDS = 30.0
@@ -146,7 +146,7 @@ def _select_negative_reviews(
         negatives.append(record)
 
     # Lowest rating first: if we have to truncate, keep the most severe complaints.
-    negatives.sort(key=lambda r: r.get("rating", 5))
+    negatives.sort(key=lambda r: r.get("rating", 15))
 
     truncated = negatives[:_MAX_NEGATIVE_REVIEWS]
     if len(negatives) > _MAX_NEGATIVE_REVIEWS:

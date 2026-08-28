@@ -47,16 +47,23 @@ class TransformerSentimentResult(BaseModel):
 
 
 def _get_pipeline() -> Pipeline:
-    """Return the cached HF pipeline, creating it on first call."""
     global _pipeline
+
     if _pipeline is None:
-        logger.info("Loading Transformer sentiment model '%s' (first use)...", _MODEL_NAME)
+        logger.info(
+            "Loading Transformer sentiment model '%s' (first use)...",
+            _MODEL_NAME,
+        )
+
         _pipeline = pipeline(
             "text-classification",
             model=_MODEL_NAME,
             tokenizer=_MODEL_NAME,
-            top_k=None,  # return scores for all 5 classes, not just the top one
+            top_k=None,
+            truncation=True,
+            max_length=512,
         )
+
     return _pipeline
 
 
