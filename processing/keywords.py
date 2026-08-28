@@ -5,7 +5,8 @@ from typing import Any, Sequence
 
 import numpy as np
 from pydantic import BaseModel, Field
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS, TfidfVectorizer
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,48 @@ class NegativeTermsReport(BaseModel):
     keywords: list[NegativeTerm] = Field(default_factory=list)
     phrases: list[NegativeTerm] = Field(default_factory=list)
     method: str = "tfidf-ngram"
+
+
+# ---------------------------------------------------------------------------
+# Stopword configuration
+# ---------------------------------------------------------------------------
+#
+# sklearn's built-in "english" stopword list removes grammatical scaffolding
+# (the, to, my, you, ...), which is what turns noise like "you guys" / "to
+# post" / "my fb" into meaningless n-grams in the first place: TF-IDF has no
+# notion of "content word" vs "function word" on its own, so without this
+# filter it happily ranks function-word phrases as highly as product terms.
+#
+# Two adjustments on top of the default list:
+#
+# 1. Negation words are put BACK IN. sklearn's default list treats "not",
+#    "no", "never", "cannot", etc. as stopwords, which would turn a useful
+#    complaint phrase like "cannot log in" into just "log in" — losing the
+#    exact signal that makes it a complaint. Negation is domain-agnostic
+#    (it matters for any app's reviews), so we always keep it.
+# 2. A small, generic filler list is added for conversational words that
+#    are common in review text but aren't in sklearn's classic list (it
+#    predates casual internet writing). These are generic across any app
+#    review corpus — not specific to any one product.
+_NEGATION_WORDS: frozenset[str] = frozenset(
+    {"not", "no", "never", "cannot", "none", "nothing", "neither", "nor", "without"}
+)
+
+_GENERIC_FILLER_WORDS: frozenset[str] = frozenset(
+    {
+        "guys", "gonna", "wanna", "yeah", "okay", "hey",
+        "really", "literally", "actually", "please",
+        "thanks", "thank", "lol", "omg",
+    }
+)
+
+_DOMAIN_STOP_WORDS: frozenset[str] = frozenset(
+    {"app", "application", "music", "song", "spotify"}
+)
+
+_STOP_WORDS: list[str] = sorted(
+    (ENGLISH_STOP_WORDS - _NEGATION_WORDS) | _GENERIC_FILLER_WORDS | _DOMAIN_STOP_WORDS
+)
 
 
 def extract_negative_texts(
@@ -71,8 +114,8 @@ def extract_negative_texts(
 
 def analyze_negative_terms(
     texts: Sequence[str],
-    max_keywords: int = 15,
-    max_phrases: int = 15,
+    max_keywords: int = 30,
+    max_phrases: int = 30,
 ) -> NegativeTermsReport:
     """Rank unigram keywords and multi-word phrases from negative review text.
 
@@ -80,6 +123,23 @@ def analyze_negative_terms(
     are split into "keywords" (single word) and "phrases" (2-3 words) based
     on the same underlying corpus statistics, so scores are comparable
     across both buckets.
+
+    Stopwords (English function words, plus a small generic conversational-
+    filler list, but with negation words deliberately preserved — see
+    module-level comment) are stripped from the token stream before n-grams
+    are formed. This matters because TF-IDF score alone conflates three
+    different things:
+
+    - TF-IDF importance: how statistically distinctive a term is in this
+      corpus relative to others. A pure grammatical phrase can score just
+      as high as a product term — TF-IDF has no concept of "content word".
+    - Raw frequency: how often a term appears. Frequent isn't the same as
+      informative ("app" may be frequent and empty of signal; "data loss"
+      may be rare and critical).
+    - Meaningful product issue: requires the term to carry actual product
+      vocabulary. This only emerges once stopword filtering removes the
+      grammatical scaffolding that inflates statistically-valid-but-useless
+      n-grams like "you guys" or "to post".
 
     ``min_df``/``max_df`` are adapted to the corpus size: fixed values that
     work on hundreds of documents can silently erase the entire vocabulary
@@ -115,15 +175,15 @@ def analyze_negative_terms(
         max_features=500,
         lowercase=True,
         sublinear_tf=True,
-        stop_words=None,
+        stop_words=_STOP_WORDS,
     )
 
     try:
         matrix = vectorizer.fit_transform(non_empty)
     except ValueError as exc:
         # e.g. every remaining "non-empty" text tokenizes to nothing
-        # (pure punctuation/whitespace) — sklearn raises rather than
-        # returning an empty vocabulary silently.
+        # (pure punctuation/whitespace, or entirely stopwords) — sklearn
+        # raises rather than returning an empty vocabulary silently.
         logger.warning("TF-IDF vectorization produced an empty vocabulary: %s", exc)
         return NegativeTermsReport(negative_review_count=negative_review_count)
 
@@ -135,6 +195,11 @@ def analyze_negative_terms(
     phrase_candidates: list[NegativeTerm] = []
 
     for term, score, df in zip(vocabulary, corpus_score, doc_frequency):
+        # Guard against purely numeric n-grams (e.g. "5", "10 15") slipping
+        # through — they're statistically valid but carry no product signal.
+        if term.replace(" ", "").isdigit():
+            continue
+
         entry = NegativeTerm(term=term, score=round(float(score), 4), document_frequency=int(df))
         if " " in term:
             phrase_candidates.append(entry)

@@ -9,3 +9,6 @@ torch>=2.0.0
 groq>=1.6.0
 scikit-learn>=1.4.0
 numpy>=1.26.0
+spacy>=3.7.0
+keybert>=0.8.0
+sentence-transformers>=3.0.0
