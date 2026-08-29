@@ -145,15 +145,15 @@ def collect_reviews(
 
 @app.post(
     "/api/reviews/{app_id}/fetch",
-    summary="Fetch reviews without processing",
+    summary="Fetch and save reviews without processing",
 )
 def fetch_reviews_only(
     app_id: str = FastAPIPath(..., pattern=r"^\d+$"),
     req: CollectRequest = None,
 ):
     """
-    Fetch reviews from FetchLayer without running any analysis or
-    saving the results to files.
+    Fetch reviews from FetchLayer and save them to review.json
+    without running any analysis.
     """
     try:
         client = FetchLayerReviewClient()
@@ -169,12 +169,24 @@ def fetch_reviews_only(
             for review in reviews
         ]
 
+        if not review_records:
+            return {
+                "status": "success",
+                "app_id": app_id,
+                "country": req.country,
+                "count": 0,
+                "reviews": [],
+            }
+
+        save_json(RAW_REVIEWS_PATH, review_records)
+
         return {
             "status": "success",
             "app_id": app_id,
             "country": req.country,
             "count": len(review_records),
             "reviews": review_records,
+            "saved_to": str(RAW_REVIEWS_PATH),
         }
 
     except Exception as e:
