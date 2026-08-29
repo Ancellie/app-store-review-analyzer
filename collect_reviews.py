@@ -139,8 +139,8 @@ def run_transformer(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return _run_stage("Transformer sentiment analysis", lambda: attach_sentiment_transformer(records))
 
 
-def run_groq(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return _run_stage("Groq LLM sentiment analysis", lambda: attach_sentiment_llm(records))
+def run_llm(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return _run_stage("LLM sentiment analysis", lambda: attach_sentiment_llm(records))
 
 
 def run_keywords(records: list[dict[str, Any]]) -> dict[str, NegativeTermsReport]:
@@ -204,8 +204,8 @@ def main() -> int:
     _progress(5, "Running Transformer sentiment...")
     records = run_transformer(records)
 
-    _progress(6, "Running Groq LLM sentiment...")
-    records = run_groq(records)
+    _progress(6, f"Running LLM sentiment...")
+    records = run_llm(records)
 
     _progress(7, "Extracting negative keywords...")
     keyword_reports = run_keywords(records)

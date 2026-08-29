@@ -7,7 +7,7 @@ variable.
 
 from __future__ import annotations
 from datetime import date
-
+import re
 import logging
 import math
 import os
@@ -53,6 +53,8 @@ class FetchLayerReviewClient(ReviewClient):
     ) -> List[Review]:
         if not app_id or not app_id.strip():
             raise ValueError("app_id must be a non-empty string")
+        if not re.match(r"^\d+$", app_id):
+            raise ValueError(f"Invalid app_id format: '{app_id}'. App Store IDs must contain only digits.")
         if limit <= 0:
             raise ValueError("limit must be a positive integer")
 

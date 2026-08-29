@@ -1,0 +1,34 @@
+services:
+  # Your API
+  - type: web
+    name: appstore-review-analysis-api
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: standard
+    healthCheckPath: /health
+
+    envVars:
+      - key: FETCHLAYER_API_KEY
+        sync: false
+
+      - key: LLM_PROVIDER
+        value: ollama
+
+      - key: OLLAMA_HOST
+        value: http://ollama:11434
+
+      - key: OLLAMA_MODEL
+        sync: false
+
+      - key: PYTHONUNBUFFERED
+        value: "1"
+
+
+  # Ollama
+  - type: pserv
+    name: ollama
+    env: docker
+    dockerfilePath: ./ollama/Dockerfile
+    dockerContext: ./ollama
+    plan: standard

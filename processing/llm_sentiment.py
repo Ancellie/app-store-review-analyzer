@@ -19,10 +19,11 @@ logger = logging.getLogger(__name__)
 
 SentimentLabel = Literal["positive", "negative", "neutral"]
 
-_GROQ_MODEL = "openai/gpt-oss-20b"
-_OLLAMA_MODEL = "llama3.1"
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+_GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 
-_PROVIDER = os.environ.get("LLM_PROVIDER", "groq").lower()
+_PROVIDER = os.environ.get("LLM_PROVIDER", "ollama").lower()
 
 _groq_client: Groq | None = None
 
@@ -91,7 +92,7 @@ def _analyze_with_groq(text: str, system_prompt: str) -> LLMSentimentResult:
 def _analyze_with_ollama(text: str, system_prompt: str) -> LLMSentimentResult:
     try:
         response = ollama.chat(
-            model=_OLLAMA_MODEL,
+            model=OLLAMA_MODEL,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": text}
