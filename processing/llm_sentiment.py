@@ -9,6 +9,7 @@ from typing import Any, Literal, Sequence
 
 from dotenv import load_dotenv
 from groq import Groq
+from groq import APIConnectionError, APIStatusError, APITimeoutError, RateLimitError
 import ollama
 from pydantic import BaseModel, Field
 
@@ -26,10 +27,27 @@ _PROVIDER = os.environ.get("LLM_PROVIDER", "groq").lower()
 _groq_client: Groq | None = None
 
 
+class SentimentAnalysisError(Exception):
+    """Base class for recoverable, per-review LLM sentiment failures."""
+
+
+class ProviderError(SentimentAnalysisError):
+    """The provider/API call itself failed: network error, timeout, rate
+    limit, or the API rejected the request (e.g. invalid/oversized text —
+    this is how "invalid individual review data" surfaces in practice,
+    since the provider is the one that validates the request)."""
+
+
+class MalformedResponseError(SentimentAnalysisError):
+    """The provider responded, but the content wasn't a usable
+    {"label": ..., "score": ...} JSON payload."""
+
+
 class LLMSentimentResult(BaseModel):
-    label: SentimentLabel
-    score: float = Field(ge=0.0, le=1.0, description="Confidence of the label")
-    method: str = Field(description="Which LLM provider was used")
+    label: SentimentLabel | None
+    score: float = Field(ge=0.0, le=1.0, description="Confidence of the label; 0.0 when label is None")
+    method: str = Field(description="Which LLM provider (and outcome) produced this result")
+    error: str | None = Field(default=None, description="Failure reason; set only when label is None")
 
 
 def _get_groq_client() -> Groq:
@@ -55,11 +73,19 @@ def _analyze_with_groq(text: str, system_prompt: str) -> LLMSentimentResult:
             temperature=0.0,
             response_format={"type": "json_object"},
         )
-        response_text = completion.choices[0].message.content
-        return _parse_json_response(response_text, method="llm-groq")
-    except Exception as e:
-        logger.warning(f"Groq API failed for text '{text[:20]}...': {e}")
-        return LLMSentimentResult(label="neutral", score=0.0, method="llm-groq-error")
+    except RateLimitError as exc:
+        raise ProviderError(f"Groq rate limit exceeded: {exc}") from exc
+    except APITimeoutError as exc:
+        raise ProviderError(f"Groq request timed out: {exc}") from exc
+    except APIConnectionError as exc:
+        raise ProviderError(f"Could not connect to Groq: {exc}") from exc
+    except APIStatusError as exc:
+        raise ProviderError(f"Groq API returned an error (status {exc.status_code}): {exc}") from exc
+
+    response_text = completion.choices[0].message.content
+    if not response_text:
+        raise MalformedResponseError("Groq returned an empty response body.")
+    return _parse_json_response(response_text, method="llm-groq")
 
 
 def _analyze_with_ollama(text: str, system_prompt: str) -> LLMSentimentResult:
@@ -73,23 +99,43 @@ def _analyze_with_ollama(text: str, system_prompt: str) -> LLMSentimentResult:
             format="json",
             options={"temperature": 0.0}
         )
-        response_text = response['message']['content']
-        return _parse_json_response(response_text, method="llm-ollama")
-    except Exception as e:
-        logger.warning(f"Ollama failed for text '{text[:20]}...': {e}")
-        return LLMSentimentResult(label="neutral", score=0.0, method="llm-ollama-error")
+    except ollama.ResponseError as exc:
+        raise ProviderError(f"Ollama API returned an error: {exc}") from exc
+    except (ConnectionError, TimeoutError, OSError) as exc:
+        raise ProviderError(f"Could not reach Ollama: {exc}") from exc
+
+    try:
+        response_text = response["message"]["content"]
+    except (KeyError, TypeError) as exc:
+        raise MalformedResponseError(f"Ollama response missing expected fields: {exc}") from exc
+
+    if not response_text:
+        raise MalformedResponseError("Ollama returned an empty response body.")
+    return _parse_json_response(response_text, method="llm-ollama")
+
+
+_VALID_LABELS = {"positive", "negative", "neutral"}
 
 
 def _parse_json_response(response_text: str, method: str) -> LLMSentimentResult:
     try:
         parsed = json.loads(response_text)
-        label = parsed.get("label", "neutral").lower()
-        if label not in ("positive", "negative", "neutral"):
-            label = "neutral"
+    except json.JSONDecodeError as exc:
+        raise MalformedResponseError(f"Response was not valid JSON: {exc}") from exc
+
+    if not isinstance(parsed, dict):
+        raise MalformedResponseError(f"Response JSON was not an object: {type(parsed).__name__}")
+
+    raw_label = parsed.get("label")
+    if not isinstance(raw_label, str) or raw_label.lower() not in _VALID_LABELS:
+        raise MalformedResponseError(f"Response missing a valid 'label' field: {parsed!r}")
+
+    try:
         score = float(parsed.get("score", 1.0))
-        return LLMSentimentResult(label=label, score=score, method=method)
-    except json.JSONDecodeError:
-        return LLMSentimentResult(label="neutral", score=0.0, method=f"{method}-parse-error")
+    except (TypeError, ValueError) as exc:
+        raise MalformedResponseError(f"Response 'score' was not numeric: {parsed.get('score')!r}") from exc
+
+    return LLMSentimentResult(label=raw_label.lower(), score=score, method=method)
 
 
 def analyze_sentiment(text: str) -> LLMSentimentResult:
@@ -109,10 +155,13 @@ def analyze_sentiment(text: str) -> LLMSentimentResult:
         "Do not include markdown blocks, explanations, or any other text."
     )
 
-    if _PROVIDER == "ollama":
-        return _analyze_with_ollama(stripped, system_prompt)
-    else:
+    try:
+        if _PROVIDER == "ollama":
+            return _analyze_with_ollama(stripped, system_prompt)
         return _analyze_with_groq(stripped, system_prompt)
+    except SentimentAnalysisError as exc:
+        logger.warning("LLM sentiment failed for text '%s...': %s", stripped[:20], exc)
+        return LLMSentimentResult(label=None, score=0.0, method=f"llm-{_PROVIDER}-error", error=str(exc))
 
 
 def attach_sentiment_llm(
@@ -138,6 +187,18 @@ def attach_sentiment_llm(
 
             if _PROVIDER == "groq":
                 time.sleep(0.3)
+
+    failed_count = sum(1 for result in results_map.values() if result.label is None)
+    if failed_count:
+        logger.warning(
+            "LLM sentiment analysis completed with %d/%d review(s) failed "
+            "(see warnings above for individual reasons); those reviews carry "
+            "sentiment_llm.label=None and are excluded from LLM sentiment stats.",
+            failed_count,
+            len(records),
+        )
+    else:
+        logger.info("LLM sentiment analysis completed: %d/%d review(s) succeeded.", len(records), len(records))
 
     return [
         {**record, "sentiment_llm": results_map[i].model_dump()}

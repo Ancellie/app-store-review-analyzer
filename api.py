@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any
 
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.responses import FileResponse
@@ -22,6 +21,7 @@ from processing.sentiment import attach_sentiment
 from processing.transformer_sentiment import attach_sentiment_transformer
 from processing.llm_sentiment import attach_sentiment_llm
 from processing.llm_insights import generate_insight_report
+from processing.results import save_json, save_pipeline_results
 
 # Налаштування шляхів
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -37,33 +37,6 @@ app = FastAPI(
 
 
 # --- Допоміжні функції ---
-
-def save_json(path: Path, data: Any) -> None:
-    path.write_text(json.dumps(data, indent=4, ensure_ascii=False), encoding="utf-8")
-
-
-def _label_distribution(records: list[dict[str, Any]], sentiment_field: str) -> dict[str, int]:
-    counts = {"positive": 0, "neutral": 0, "negative": 0}
-    for record in records:
-        sentiment = record.get(sentiment_field)
-        if isinstance(sentiment, dict) and sentiment.get("label") in counts:
-            counts[sentiment["label"]] += 1
-    return counts
-
-
-def _build_sentiment_export(records: list[dict[str, Any]], sentiment_field: str) -> list[dict[str, Any]]:
-    return [
-        {
-            "index": idx,
-            "rating": record.get("rating"),
-            "title": record.get("title"),
-            "review": record.get("review"),
-            "clean_review": record.get("clean_review"),
-            sentiment_field: record.get(sentiment_field),
-        }
-        for idx, record in enumerate(records)
-    ]
-
 
 def run_pipeline(app_id: str, country: str, limit: int) -> None:
     """Фонова задача для повного циклу збору та обробки."""
@@ -102,42 +75,7 @@ def run_pipeline(app_id: str, country: str, limit: int) -> None:
         insight_report = generate_insight_report(records)
 
         # 4. Saving Results
-        RESULTS_DIR.mkdir(exist_ok=True)
-        save_json(RESULTS_DIR / "metrics.json", metrics)
-        save_json(RESULTS_DIR / "sentiment_vader.json", _build_sentiment_export(records, "sentiment"))
-        save_json(RESULTS_DIR / "sentiment_transformer.json", _build_sentiment_export(records, "sentiment_transformer"))
-        save_json(RESULTS_DIR / "sentiment_llm.json", _build_sentiment_export(records, "sentiment_llm"))
-
-        # Збереження звітів ключових слів в окремі файли
-        for name, report in keyword_reports.items():
-            save_json(RESULTS_DIR / f"negative_keywords_{name}.json", report.model_dump())
-
-        save_json(RESULTS_DIR / "insights.json", insight_report.model_dump())
-
-        # Формування загального звіту
-        analysis = {
-            "metrics": metrics,
-            "sentiment_distribution": {
-                "vader": _label_distribution(records, "sentiment"),
-                "transformer": _label_distribution(records, "sentiment_transformer"),
-                "llm": _label_distribution(records, "sentiment_llm"),
-            },
-            "top_negative_keywords": {
-                name: [k.model_dump() for k in report.keywords[:5]]
-                for name, report in keyword_reports.items()
-            },
-            "top_negative_phrases": {
-                name: [p.model_dump() for p in report.phrases[:5]]
-                for name, report in keyword_reports.items()
-            },
-            "insights_summary": {
-                "summary": insight_report.summary,
-                "problem_areas": [i.problem_area for i in insight_report.insights],
-                "reviews_analyzed": insight_report.reviews_analyzed,
-                "model": insight_report.model,
-            },
-        }
-        save_json(RESULTS_DIR / "analysis.json", analysis)
+        save_pipeline_results(RESULTS_DIR, metrics, records, keyword_reports, insight_report)
         logging.info("Pipeline completed successfully.")
 
     except Exception as e:
