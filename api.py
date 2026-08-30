@@ -126,6 +126,10 @@ class CollectRequest(BaseModel):
 
 # --- Endpoints ---
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 @app.post("/api/reviews/{app_id}/collect", summary="Collect reviews and trigger analysis")
 def collect_reviews(
         app_id: str = FastAPIPath(..., pattern=r"^\d+$"),
@@ -344,34 +348,50 @@ def sentiment_by_rating_chart():
     "/api/visualizations/top-negative-terms",
     summary="Top negative keywords and phrases chart",
 )
-def top_negative_terms_chart(kind: str = "keywords"):
+def top_negative_terms_chart(
+    method: str = "tfidf",
+    kind: str = "keywords",
+):
+    if method not in {"tfidf", "keybert", "spacy-pos"}:
+        raise HTTPException(
+            status_code=400,
+            detail="method must be one of: tfidf, keybert, spacy-pos.",
+        )
+
     if kind not in {"keywords", "phrases"}:
         raise HTTPException(
             status_code=400,
             detail="kind must be either 'keywords' or 'phrases'.",
         )
 
-    keywords_file = RESULTS_DIR / "negative_keywords_tfidf.json"
+    files = {
+        "tfidf": RESULTS_DIR / "negative_keywords_tfidf.json",
+        "keybert": RESULTS_DIR / "negative_keywords_keybert.json",
+        "spacy-pos": RESULTS_DIR / "negative_keywords_spacy.json",
+    }
+
+    keywords_file = files[method]
 
     if not keywords_file.exists():
         raise HTTPException(
             status_code=404,
-            detail="Negative keyword results not found.",
+            detail=f"Negative keyword results for {method} not found.",
         )
 
     with open(keywords_file, "r", encoding="utf-8") as f:
         report = json.load(f)
 
-    if kind == "keywords":
-        terms = report.get("keywords", [])
-        title = "Top Negative Keywords"
-    else:
-        terms = report.get("phrases", [])
-        title = "Top Negative Phrases"
+    terms = report.get(kind, [])
+
+    titles = {
+        "tfidf": "Top Negative Terms — TF-IDF",
+        "keybert": "Top Negative Terms — KeyBERT",
+        "spacy-pos": "Top Negative Terms — spaCy POS",
+    }
 
     image = render_top_negative_terms(
         terms=terms,
-        title=title,
+        title=titles[method],
     )
 
     return Response(

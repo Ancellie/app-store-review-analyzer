@@ -170,24 +170,26 @@ def attach_sentiment_llm(
         text_field: str = "clean_review",
         max_workers: int = 4,
 ) -> list[dict[str, Any]]:
+
+    if _PROVIDER == "groq":
+        max_workers = 1
+
     results_map: dict[int, LLMSentimentResult] = {}
     logger.info(f"Starting LLM sentiment analysis using provider: {_PROVIDER.upper()}")
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_idx = {
-            executor.submit(
-                analyze_sentiment,
-                record.get(text_field, "") if isinstance(record.get(text_field, ""), str) else ""
-            ): idx
-            for idx, record in enumerate(records)
-        }
+        future_to_idx = {}
+        for idx, record in enumerate(records):
+            text = record.get(text_field, "") if isinstance(record.get(text_field, ""), str) else ""
+            future = executor.submit(analyze_sentiment, text)
+            future_to_idx[future] = idx
+
+            if _PROVIDER == "groq":
+                time.sleep(2.1)
 
         for future in as_completed(future_to_idx):
             idx = future_to_idx[future]
             results_map[idx] = future.result()
-
-            if _PROVIDER == "groq":
-                time.sleep(0.3)
 
     failed_count = sum(1 for result in results_map.values() if result.label is None)
     if failed_count:
