@@ -34,6 +34,7 @@ GROQ_MODEL=openai/gpt-oss-20b
 
 - `FETCHLAYER_API_KEY` is required — the collector (`collector/fetchlayer_client.py`) raises a `ValueError` on startup if it is missing.
 - `LLM_PROVIDER` selects `ollama` or `groq` for both the LLM sentiment layer and the LLM insights layer.
+- `HF_TOKEN` is used by Hugging Face Transformers to authenticate when downloading models from the Hugging Face Hub. It is optional for public models, but should be provided if a model requires authentication or access to the Hugging Face Hub is rate-limited.
 - If `LLM_PROVIDER=ollama`, `OLLAMA_HOST`/`OLLAMA_MODEL` must point to a running Ollama server with the model pulled.
 - If `LLM_PROVIDER=groq`, `GROQ_API_KEY`/`GROQ_MODEL` are required instead.
 

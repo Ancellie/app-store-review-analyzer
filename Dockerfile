@@ -22,9 +22,9 @@ COPY . .
 # Informational only — Render ignores EXPOSE and injects the real port via
 # the $PORT env var (see CMD below), but it documents intent for anyone
 # running the image locally.
-EXPOSE 8000
+EXPOSE 8080
 
 # Shell form (not exec/JSON form) is required here so $PORT is actually
 # expanded at container start — Render sets $PORT dynamically and the app
 # must bind to it, not to a hardcoded port.
-CMD ["sh", "-c", "exec uvicorn api:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "exec uvicorn api:app --host 0.0.0.0 --port ${PORT:-8080}"]
