@@ -1,0 +1,158 @@
+{
+    "negative_review_count": 726,
+    "keywords": [
+        {
+            "term": "ads",
+            "score": 0.6263,
+            "document_frequency": 46
+        },
+        {
+            "term": "premium",
+            "score": 0.4056,
+            "document_frequency": 22
+        },
+        {
+            "term": "adds",
+            "score": 0.3542,
+            "document_frequency": 21
+        },
+        {
+            "term": "songs",
+            "score": 0.5002,
+            "document_frequency": 16
+        },
+        {
+            "term": "great",
+            "score": 0.4659,
+            "document_frequency": 16
+        },
+        {
+            "term": "love",
+            "score": 0.2835,
+            "document_frequency": 15
+        },
+        {
+            "term": "good",
+            "score": 0.4136,
+            "document_frequency": 14
+        },
+        {
+            "term": "don",
+            "score": 0.1953,
+            "document_frequency": 11
+        },
+        {
+            "term": "use",
+            "score": 0.1961,
+            "document_frequency": 10
+        },
+        {
+            "term": "sucks",
+            "score": 0.6327,
+            "document_frequency": 9
+        },
+        {
+            "term": "better",
+            "score": 0.5785,
+            "document_frequency": 9
+        },
+        {
+            "term": "apple",
+            "score": 0.4139,
+            "document_frequency": 9
+        },
+        {
+            "term": "just",
+            "score": 0.2618,
+            "document_frequency": 9
+        },
+        {
+            "term": "not",
+            "score": 0.2828,
+            "document_frequency": 8
+        },
+        {
+            "term": "annoying",
+            "score": 0.5271,
+            "document_frequency": 7
+        }
+    ],
+    "phrases": [
+        {
+            "term": "way ads",
+            "score": 0.6753,
+            "document_frequency": 5
+        },
+        {
+            "term": "ads annoying",
+            "score": 0.8417,
+            "document_frequency": 4
+        },
+        {
+            "term": "adds songs",
+            "score": 0.509,
+            "document_frequency": 4
+        },
+        {
+            "term": "don pay",
+            "score": 0.2563,
+            "document_frequency": 4
+        },
+        {
+            "term": "good ads",
+            "score": 0.8058,
+            "document_frequency": 3
+        },
+        {
+            "term": "ts tuff",
+            "score": 0.8022,
+            "document_frequency": 3
+        },
+        {
+            "term": "pay artists",
+            "score": 0.7561,
+            "document_frequency": 3
+        },
+        {
+            "term": "unlimited skips",
+            "score": 0.5293,
+            "document_frequency": 3
+        },
+        {
+            "term": "no gusta",
+            "score": 0.3443,
+            "document_frequency": 3
+        },
+        {
+            "term": "da goat",
+            "score": 0.7804,
+            "document_frequency": 2
+        },
+        {
+            "term": "premium free",
+            "score": 0.7112,
+            "document_frequency": 2
+        },
+        {
+            "term": "skip songs want",
+            "score": 0.6566,
+            "document_frequency": 2
+        },
+        {
+            "term": "needs ads",
+            "score": 0.6472,
+            "document_frequency": 2
+        },
+        {
+            "term": "way way ads",
+            "score": 0.6402,
+            "document_frequency": 2
+        },
+        {
+            "term": "ads like songs",
+            "score": 0.6209,
+            "document_frequency": 2
+        }
+    ],
+    "method": "keybert"
+}

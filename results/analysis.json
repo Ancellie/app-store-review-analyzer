@@ -1,0 +1,218 @@
+{
+    "metrics": {
+        "total": 2000,
+        "valid_count": 2000,
+        "invalid_count": 0,
+        "average_rating": 4.02,
+        "rating_counts": {
+            "1": 285,
+            "2": 100,
+            "3": 153,
+            "4": 214,
+            "5": 1248
+        },
+        "rating_distribution": {
+            "1": 14.25,
+            "2": 5.0,
+            "3": 7.65,
+            "4": 10.7,
+            "5": 62.4
+        }
+    },
+    "sentiment_distribution": {
+        "vader": {
+            "positive": 1250,
+            "neutral": 434,
+            "negative": 316
+        },
+        "transformer": {
+            "positive": 1005,
+            "neutral": 269,
+            "negative": 726
+        },
+        "llm": {
+            "positive": 1121,
+            "neutral": 100,
+            "negative": 779
+        }
+    },
+    "llm_sentiment_errors": 0,
+    "top_negative_keywords": {
+        "tfidf": [
+            {
+                "term": "ads",
+                "score": 47.3838,
+                "document_frequency": 151
+            },
+            {
+                "term": "premium",
+                "score": 31.7874,
+                "document_frequency": 139
+            },
+            {
+                "term": "songs",
+                "score": 28.5555,
+                "document_frequency": 141
+            },
+            {
+                "term": "like",
+                "score": 28.5095,
+                "document_frequency": 130
+            },
+            {
+                "term": "not",
+                "score": 26.1409,
+                "document_frequency": 122
+            }
+        ],
+        "spacy": [
+            {
+                "term": "ad",
+                "score": 0.2231,
+                "document_frequency": 162
+            },
+            {
+                "term": "premium",
+                "score": 0.1887,
+                "document_frequency": 137
+            },
+            {
+                "term": "good",
+                "score": 0.1088,
+                "document_frequency": 79
+            },
+            {
+                "term": "time",
+                "score": 0.1061,
+                "document_frequency": 77
+            },
+            {
+                "term": "playlist",
+                "score": 0.0758,
+                "document_frequency": 55
+            }
+        ],
+        "keybert": [
+            {
+                "term": "ads",
+                "score": 0.6263,
+                "document_frequency": 46
+            },
+            {
+                "term": "premium",
+                "score": 0.4056,
+                "document_frequency": 22
+            },
+            {
+                "term": "adds",
+                "score": 0.3542,
+                "document_frequency": 21
+            },
+            {
+                "term": "songs",
+                "score": 0.5002,
+                "document_frequency": 16
+            },
+            {
+                "term": "great",
+                "score": 0.4659,
+                "document_frequency": 16
+            }
+        ]
+    },
+    "top_negative_phrases": {
+        "tfidf": [
+            {
+                "term": "without premium",
+                "score": 7.239,
+                "document_frequency": 22
+            },
+            {
+                "term": "don premium",
+                "score": 6.1683,
+                "document_frequency": 18
+            },
+            {
+                "term": "don like",
+                "score": 5.9613,
+                "document_frequency": 16
+            },
+            {
+                "term": "way ads",
+                "score": 4.8433,
+                "document_frequency": 8
+            },
+            {
+                "term": "pay premium",
+                "score": 4.201,
+                "document_frequency": 14
+            }
+        ],
+        "spacy": [
+            {
+                "term": "free version",
+                "score": 0.011,
+                "document_frequency": 8
+            },
+            {
+                "term": "buy premium",
+                "score": 0.0096,
+                "document_frequency": 7
+            },
+            {
+                "term": "long time",
+                "score": 0.0083,
+                "document_frequency": 6
+            },
+            {
+                "term": "unlimited skip",
+                "score": 0.0083,
+                "document_frequency": 6
+            },
+            {
+                "term": "new update",
+                "score": 0.0069,
+                "document_frequency": 5
+            }
+        ],
+        "keybert": [
+            {
+                "term": "way ads",
+                "score": 0.6753,
+                "document_frequency": 5
+            },
+            {
+                "term": "ads annoying",
+                "score": 0.8417,
+                "document_frequency": 4
+            },
+            {
+                "term": "adds songs",
+                "score": 0.509,
+                "document_frequency": 4
+            },
+            {
+                "term": "don pay",
+                "score": 0.2563,
+                "document_frequency": 4
+            },
+            {
+                "term": "good ads",
+                "score": 0.8058,
+                "document_frequency": 3
+            }
+        ]
+    },
+    "insights_summary": {
+        "summary": "Multiple users report recurring frustrations with excessive advertising, high premium pricing, unreliable playback and playlist management, app instability, and limited control over podcast and AI content. These issues degrade the listening experience, drive users toward competitors, and increase churn risk.",
+        "problem_areas": [
+            "Excessive and intrusive ads in the free tier",
+            "Premium pricing perceived as too high",
+            "Playback, shuffle, and playlist management bugs",
+            "App stability and performance issues",
+            "Lack of control over podcast and AI content"
+        ],
+        "reviews_analyzed": 50,
+        "model": "openai/gpt-oss-120b"
+    }
+}

@@ -1,0 +1,158 @@
+{
+    "negative_review_count": 726,
+    "keywords": [
+        {
+            "term": "ad",
+            "score": 0.2231,
+            "document_frequency": 162
+        },
+        {
+            "term": "premium",
+            "score": 0.1887,
+            "document_frequency": 137
+        },
+        {
+            "term": "good",
+            "score": 0.1088,
+            "document_frequency": 79
+        },
+        {
+            "term": "time",
+            "score": 0.1061,
+            "document_frequency": 77
+        },
+        {
+            "term": "playlist",
+            "score": 0.0758,
+            "document_frequency": 55
+        },
+        {
+            "term": "great",
+            "score": 0.0702,
+            "document_frequency": 51
+        },
+        {
+            "term": "year",
+            "score": 0.0579,
+            "document_frequency": 42
+        },
+        {
+            "term": "annoying",
+            "score": 0.0565,
+            "document_frequency": 41
+        },
+        {
+            "term": "bad",
+            "score": 0.0565,
+            "document_frequency": 41
+        },
+        {
+            "term": "free",
+            "score": 0.0565,
+            "document_frequency": 41
+        },
+        {
+            "term": "thing",
+            "score": 0.0482,
+            "document_frequency": 35
+        },
+        {
+            "term": "add",
+            "score": 0.0441,
+            "document_frequency": 32
+        },
+        {
+            "term": "new",
+            "score": 0.0441,
+            "document_frequency": 32
+        },
+        {
+            "term": "podcast",
+            "score": 0.0427,
+            "document_frequency": 31
+        },
+        {
+            "term": "money",
+            "score": 0.0427,
+            "document_frequency": 31
+        }
+    ],
+    "phrases": [
+        {
+            "term": "free version",
+            "score": 0.011,
+            "document_frequency": 8
+        },
+        {
+            "term": "buy premium",
+            "score": 0.0096,
+            "document_frequency": 7
+        },
+        {
+            "term": "long time",
+            "score": 0.0083,
+            "document_frequency": 6
+        },
+        {
+            "term": "unlimited skip",
+            "score": 0.0083,
+            "document_frequency": 6
+        },
+        {
+            "term": "new update",
+            "score": 0.0069,
+            "document_frequency": 5
+        },
+        {
+            "term": "free user",
+            "score": 0.0055,
+            "document_frequency": 4
+        },
+        {
+            "term": "need premium",
+            "score": 0.0055,
+            "document_frequency": 4
+        },
+        {
+            "term": "premium version",
+            "score": 0.0055,
+            "document_frequency": 4
+        },
+        {
+            "term": "pay artist",
+            "score": 0.0055,
+            "document_frequency": 4
+        },
+        {
+            "term": "get ad",
+            "score": 0.0055,
+            "document_frequency": 4
+        },
+        {
+            "term": "ad pop",
+            "score": 0.0055,
+            "document_frequency": 4
+        },
+        {
+            "term": "bare minimum",
+            "score": 0.0055,
+            "document_frequency": 4
+        },
+        {
+            "term": "premium membership",
+            "score": 0.0041,
+            "document_frequency": 3
+        },
+        {
+            "term": "have premium",
+            "score": 0.0041,
+            "document_frequency": 3
+        },
+        {
+            "term": "play list",
+            "score": 0.0041,
+            "document_frequency": 3
+        }
+    ],
+    "method": "spacy-pos"
+}

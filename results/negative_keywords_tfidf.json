@@ -1,0 +1,158 @@
+{
+    "negative_review_count": 726,
+    "keywords": [
+        {
+            "term": "ads",
+            "score": 47.3838,
+            "document_frequency": 151
+        },
+        {
+            "term": "premium",
+            "score": 31.7874,
+            "document_frequency": 139
+        },
+        {
+            "term": "songs",
+            "score": 28.5555,
+            "document_frequency": 141
+        },
+        {
+            "term": "like",
+            "score": 28.5095,
+            "document_frequency": 130
+        },
+        {
+            "term": "not",
+            "score": 26.1409,
+            "document_frequency": 122
+        },
+        {
+            "term": "just",
+            "score": 24.9369,
+            "document_frequency": 129
+        },
+        {
+            "term": "don",
+            "score": 22.7442,
+            "document_frequency": 110
+        },
+        {
+            "term": "adds",
+            "score": 22.0436,
+            "document_frequency": 59
+        },
+        {
+            "term": "no",
+            "score": 21.458,
+            "document_frequency": 74
+        },
+        {
+            "term": "love",
+            "score": 20.4299,
+            "document_frequency": 67
+        },
+        {
+            "term": "good",
+            "score": 20.1907,
+            "document_frequency": 67
+        },
+        {
+            "term": "great",
+            "score": 20.0081,
+            "document_frequency": 50
+        },
+        {
+            "term": "listen",
+            "score": 19.8218,
+            "document_frequency": 87
+        },
+        {
+            "term": "pay",
+            "score": 17.4337,
+            "document_frequency": 65
+        },
+        {
+            "term": "play",
+            "score": 15.8879,
+            "document_frequency": 69
+        }
+    ],
+    "phrases": [
+        {
+            "term": "without premium",
+            "score": 7.239,
+            "document_frequency": 22
+        },
+        {
+            "term": "don premium",
+            "score": 6.1683,
+            "document_frequency": 18
+        },
+        {
+            "term": "don like",
+            "score": 5.9613,
+            "document_frequency": 16
+        },
+        {
+            "term": "way ads",
+            "score": 4.8433,
+            "document_frequency": 8
+        },
+        {
+            "term": "pay premium",
+            "score": 4.201,
+            "document_frequency": 14
+        },
+        {
+            "term": "want listen",
+            "score": 4.0444,
+            "document_frequency": 14
+        },
+        {
+            "term": "ads annoying",
+            "score": 3.8011,
+            "document_frequency": 6
+        },
+        {
+            "term": "don pay",
+            "score": 3.7661,
+            "document_frequency": 11
+        },
+        {
+            "term": "like ads",
+            "score": 3.6673,
+            "document_frequency": 10
+        },
+        {
+            "term": "ads songs",
+            "score": 3.5016,
+            "document_frequency": 10
+        },
+        {
+            "term": "just wish",
+            "score": 3.4214,
+            "document_frequency": 7
+        },
+        {
+            "term": "songs want",
+            "score": 3.3385,
+            "document_frequency": 12
+        },
+        {
+            "term": "pay artists",
+            "score": 3.3323,
+            "document_frequency": 7
+        },
+        {
+            "term": "skip songs",
+            "score": 3.1455,
+            "document_frequency": 9
+        },
+        {
+            "term": "premium like",
+            "score": 3.0695,
+            "document_frequency": 8
+        }
+    ],
+    "method": "tfidf-ngram"
+}
