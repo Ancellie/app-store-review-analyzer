@@ -40,7 +40,6 @@ def resolve_slug(app_id: str, country: str = "us") -> Optional[str]:
 
     track_view_url = results[0].get("trackViewUrl", "")
 
-    # trackViewUrl looks like: https://apps.apple.com/us/app/spotify.../id324684580
     try:
         return track_view_url.split("/app/")[1].split("/id")[0] or None
     except IndexError:

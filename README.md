@@ -86,15 +86,31 @@ This runs in the background (`BackgroundTasks`) and immediately returns `{"statu
 curl http://localhost:8000/api/analysis
 ```
 
-Other useful endpoints:
+### Other useful endpoints
 
-- `POST /api/reviews/{app_id}/fetch` — collect and save `review.json` without running analysis.
-- `POST /api/reviews/analyze` — re-run analysis on the existing `review.json`.
-- `GET /api/keywords/{method}` — `tfidf` / `spacy` / `keybert` keyword reports.
-- `GET /api/reviews/download` — download the raw `review.json`.
-- `GET /api/visualizations/*` — PNG charts (rating distribution, sentiment distribution, sentiment by rating, top negative terms).
+- `POST /api/reviews/{app_id}/fetch` — collect and save reviews to `review.json` without running analysis.
+  - `country` — 2-letter country code, default: `us`
+  - `limit` — number of reviews to collect, default: `100`
 
-The same pipeline can also be run without the API, via the CLI orchestrator:
+- `POST /api/reviews/analyze` — run the full analysis pipeline on the existing `review.json`.
+
+- `GET /api/analysis` — return metrics, sentiment results, and aggregated insights from the latest analysis.
+
+- `GET /api/keywords/{method}` — return negative keyword reports.
+  - `method`: `tfidf`, `spacy`, or `keybert`
+
+- `GET /api/reviews/download` — download the raw `review.json` file.
+
+- `GET /api/visualizations/rating-distribution` — return a PNG chart with the rating distribution.
+
+- `GET /api/visualizations/sentiment-distribution` — return a PNG chart with the sentiment distribution.
+
+- `GET /api/visualizations/sentiment-by-rating` — return a PNG chart showing sentiment distribution by rating.
+
+- `GET /api/visualizations/top-negative-terms` — return a PNG chart of the most frequent negative terms or phrases.
+  - `method`: `tfidf`, `keybert`, or `spacy-pos` (default: `tfidf`)
+  - `kind`: `keywords` or `phrases` (default: `keywords`)
+
 
 ```bash
 python collect_reviews.py <APP_ID> --country us --limit 100
