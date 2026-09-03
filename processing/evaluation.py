@@ -288,39 +288,3 @@ def save_evaluation_report(report: EvaluationReport, results_dir: str | Path = D
     results_dir = Path(results_dir)
     results_dir.mkdir(exist_ok=True)
     save_json(results_dir / "evaluation.json", report.model_dump())
-
-
-# ---------------------------------------------------------------------------
-# CLI
-# ---------------------------------------------------------------------------
-
-def main() -> int:
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-
-    report = run_evaluation()
-    save_evaluation_report(report)
-
-    print(f"Evaluated {report.dataset_size} labelled review(s).\n")
-    for name in _METHOD_NAMES:
-        ev = report.models[name]
-        print(
-            f"  {name:12s} accuracy={ev.accuracy:.3f}  macro_f1={ev.f1_macro:.3f}  "
-            f"precision={ev.precision_macro:.3f}  recall={ev.recall_macro:.3f}  "
-            f"failed={ev.failed_count}/{report.dataset_size}"
-        )
-
-    if report.dataset_size < 30:
-        print(
-            f"\nNote: {report.dataset_size} labelled examples is a starting point, not a "
-            f"statistically reliable sample — treat these numbers as directional until "
-            f"the dataset is expanded."
-        )
-
-    print(f"\nResults saved to: {DEFAULT_RESULTS_DIR / 'evaluation.json'}")
-    return 0
-
-
-if __name__ == "__main__":
-    import sys
-
-    sys.exit(main())

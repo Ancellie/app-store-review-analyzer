@@ -28,12 +28,13 @@ from processing.keybert_keywords import analyze_negative_keywords_and_phrases_ke
 from processing.llm_insights import generate_insight_report, InsightReport, LLMInsightsError
 from processing.results import save_json, save_pipeline_results
 
+from processing.evaluation import run_evaluation, save_evaluation_report, EvaluationReport
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 RAW_REVIEWS_PATH = PROJECT_ROOT / "review.json"
 RESULTS_DIR = PROJECT_ROOT / "results"
 
-TOTAL_STEPS = 8
+TOTAL_STEPS = 9
 
 T = TypeVar("T")
 
@@ -63,7 +64,6 @@ def _quiet_third_party_logging() -> None:
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
     try:
         from transformers.utils import logging as hf_logging
-
         hf_logging.set_verbosity_error()
     except ImportError:
         pass
@@ -163,14 +163,27 @@ def run_insights(records: list[dict[str, Any]]) -> InsightReport:
         _fail(f"Unexpected error during LLM insight generation: {exc}")
 
 
+def run_model_evaluation() -> EvaluationReport:
+    """Run the evaluation against the hand-labelled dataset."""
+    return _run_stage(
+        "Model evaluation against labelled dataset",
+        lambda: run_evaluation()
+    )
+
 
 def save_results(
         metrics: dict[str, Any],
         records: list[dict[str, Any]],
         keyword_reports: dict[str, NegativeTermsReport],
         insight_report: InsightReport,
+        evaluation_report: EvaluationReport,
 ) -> None:
+    # Зберігаємо результати основного пайплайну
     save_pipeline_results(RESULTS_DIR, metrics, records, keyword_reports, insight_report)
+
+    # Зберігаємо звіт про оцінку (evaluation)
+    if evaluation_report:
+        save_evaluation_report(evaluation_report, RESULTS_DIR)
 
 
 # ---------------------------------------------------------------------------
@@ -204,7 +217,7 @@ def main() -> int:
     _progress(5, "Running Transformer sentiment...")
     records = run_transformer(records)
 
-    _progress(6, f"Running LLM sentiment...")
+    _progress(6, "Running LLM sentiment...")
     records = run_llm(records)
 
     _progress(7, "Extracting negative keywords...")
@@ -213,10 +226,26 @@ def main() -> int:
     _progress(8, "Generating LLM insights...")
     insight_report = run_insights(records)
 
-    save_results(metrics, records, keyword_reports, insight_report)
+    _progress(9, "Evaluating sentiment models on reference dataset...")
+    try:
+        evaluation_report = run_model_evaluation()
+    except Exception as exc:
+        print(f"    -> Warning: Evaluation skipped ({exc})")
+        evaluation_report = None
+
+    save_results(metrics, records, keyword_reports, insight_report, evaluation_report)
 
     print("\nPipeline completed successfully.")
-    print(f"Results saved to: {RESULTS_DIR}/")
+
+    if evaluation_report:
+        print(f"\nEvaluation Summary ({evaluation_report.dataset_size} reviews):")
+        for name, ev in evaluation_report.models.items():
+            print(
+                f"  {name:12s} accuracy={ev.accuracy:.3f}  macro_f1={ev.f1_macro:.3f}  "
+                f"failed={ev.failed_count}"
+            )
+
+    print(f"\nResults saved to: {RESULTS_DIR}/")
     return 0
 
 
