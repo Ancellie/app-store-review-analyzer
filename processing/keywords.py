@@ -7,6 +7,7 @@ import numpy as np
 from pydantic import BaseModel, Field
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS, TfidfVectorizer
 
+from processing.contrastive import expand_pool_size, rerank_report_contrastively
 
 logger = logging.getLogger(__name__)
 
@@ -112,6 +113,24 @@ def extract_negative_texts(
     return texts
 
 
+def extract_positive_texts(
+    records: Sequence[dict[str, Any]],
+    sentiment_field: str = "sentiment_transformer",
+    text_field: str = "clean_review",
+) -> list[str]:
+    """Return the cleaned text of every record classified as positive."""
+    texts: list[str] = []
+    for record in records:
+        sentiment_data = record.get(sentiment_field)
+        if not isinstance(sentiment_data, dict):
+            continue
+        if sentiment_data.get("label") != "positive":
+            continue
+        text = record.get(text_field, "")
+        texts.append(text if isinstance(text, str) else "")
+    return texts
+
+
 def analyze_negative_terms(
     texts: Sequence[str],
     max_keywords: int = 30,
@@ -140,6 +159,12 @@ def analyze_negative_terms(
       vocabulary. This only emerges once stopword filtering removes the
       grammatical scaffolding that inflates statistically-valid-but-useless
       n-grams like "you guys" or "to post".
+
+    Note: this function ranks by TF-IDF weight *within the negative
+    corpus only*. It answers "what's common in negative reviews", not
+    "what's specific to negative reviews" — see
+    ``processing.contrastive.rerank_report_contrastively`` for the second
+    pass that addresses that, applied by the convenience wrapper below.
 
     ``min_df``/``max_df`` are adapted to the corpus size: fixed values that
     work on hundreds of documents can silently erase the entire vocabulary
@@ -223,10 +248,19 @@ def analyze_negative_keywords_and_phrases(
     max_keywords: int = 15,
     max_phrases: int = 15,
 ) -> NegativeTermsReport:
-    """Convenience wrapper: filter records to negative reviews, then analyze.
+    negative_texts = extract_negative_texts(records, sentiment_field=sentiment_field, text_field=text_field)
+    positive_texts = extract_positive_texts(records, sentiment_field=sentiment_field, text_field=text_field)
 
-    See ``extract_negative_texts`` and ``analyze_negative_terms`` for the
-    individual steps and their parameters.
-    """
-    texts = extract_negative_texts(records, sentiment_field=sentiment_field, text_field=text_field)
-    return analyze_negative_terms(texts, max_keywords=max_keywords, max_phrases=max_phrases)
+    raw_report = analyze_negative_terms(
+        negative_texts,
+        max_keywords=expand_pool_size(max_keywords),
+        max_phrases=expand_pool_size(max_phrases),
+    )
+
+    return rerank_report_contrastively(
+        raw_report,
+        negative_texts=negative_texts,
+        positive_texts=positive_texts,
+        max_keywords=max_keywords,
+        max_phrases=max_phrases,
+    )

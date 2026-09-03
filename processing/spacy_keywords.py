@@ -7,7 +7,14 @@ import spacy
 from spacy.language import Language
 from spacy.tokens import Doc, Token
 
-from processing.keywords import NegativeTerm, NegativeTermsReport, extract_negative_texts, _DOMAIN_STOP_WORDS
+from processing.contrastive import expand_pool_size, rerank_report_contrastively
+from processing.keywords import (
+    NegativeTerm,
+    NegativeTermsReport,
+    extract_negative_texts,
+    extract_positive_texts,
+    _DOMAIN_STOP_WORDS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +126,11 @@ def analyze_negative_terms_spacy(
     an interpretable "how common is this complaint" figure, since POS
     extraction has no natural TF-IDF-style weighting of its own.
 
+    Note: this ranks by prevalence *within the negative corpus only*. See
+    ``processing.contrastive.rerank_report_contrastively`` for the second
+    pass that compares against positive reviews, applied by the
+    convenience wrapper below.
+
     Args:
         texts: Text of reviews already identified as negative.
         max_keywords: Max number of ranked single-word keywords to return.
@@ -171,9 +183,25 @@ def analyze_negative_keywords_and_phrases_spacy(
     max_keywords: int = 15,
     max_phrases: int = 15,
 ) -> NegativeTermsReport:
-    """Convenience wrapper: filter records to negative reviews, then analyze.
+    """Filter records to negative reviews, extract POS-pattern candidates
+    over a wider pool than requested, then rank them by negative
+    specificity relative to positive reviews.
 
     Mirrors ``keywords.analyze_negative_keywords_and_phrases``'s contract.
     """
-    texts = extract_negative_texts(records, sentiment_field=sentiment_field, text_field=text_field)
-    return analyze_negative_terms_spacy(texts, max_keywords=max_keywords, max_phrases=max_phrases)
+    negative_texts = extract_negative_texts(records, sentiment_field=sentiment_field, text_field=text_field)
+    positive_texts = extract_positive_texts(records, sentiment_field=sentiment_field, text_field=text_field)
+
+    raw_report = analyze_negative_terms_spacy(
+        negative_texts,
+        max_keywords=expand_pool_size(max_keywords),
+        max_phrases=expand_pool_size(max_phrases),
+    )
+
+    return rerank_report_contrastively(
+        raw_report,
+        negative_texts=negative_texts,
+        positive_texts=positive_texts,
+        max_keywords=max_keywords,
+        max_phrases=max_phrases,
+    )

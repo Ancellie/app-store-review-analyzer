@@ -25,6 +25,7 @@ from processing.llm_sentiment import attach_sentiment_llm
 from processing.keywords import analyze_negative_keywords_and_phrases, NegativeTermsReport
 from processing.spacy_keywords import analyze_negative_keywords_and_phrases_spacy
 from processing.keybert_keywords import analyze_negative_keywords_and_phrases_keybert
+from processing.quality_checks import run_quality_checks, NLPQualityReport
 from processing.llm_insights import generate_insight_report, InsightReport, LLMInsightsError
 from processing.results import save_json, save_pipeline_results
 
@@ -34,7 +35,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 RAW_REVIEWS_PATH = PROJECT_ROOT / "review.json"
 RESULTS_DIR = PROJECT_ROOT / "results"
 
-TOTAL_STEPS = 9
+TOTAL_STEPS = 10
 
 T = TypeVar("T")
 
@@ -154,6 +155,20 @@ def run_keywords(records: list[dict[str, Any]]) -> dict[str, NegativeTermsReport
     )
 
 
+def run_quality_check_stage(
+    records: list[dict[str, Any]],
+    keyword_reports: dict[str, NegativeTermsReport],
+) -> NLPQualityReport:
+    """Lightweight sanity checks on sentiment/rating agreement and on
+    whether the top negative terms are genuinely negative-specific.
+
+    Diagnostic only -- it never modifies `records` or the keyword
+    reports, so a failure here should not abort an otherwise successful
+    pipeline run (mirrors how model evaluation is handled below).
+    """
+    return run_quality_checks(records, keyword_reports)
+
+
 def run_insights(records: list[dict[str, Any]]) -> InsightReport:
     try:
         return generate_insight_report(records)
@@ -177,6 +192,7 @@ def save_results(
         keyword_reports: dict[str, NegativeTermsReport],
         insight_report: InsightReport,
         evaluation_report: EvaluationReport,
+        quality_report: NLPQualityReport | None = None,
 ) -> None:
     # Зберігаємо результати основного пайплайну
     save_pipeline_results(RESULTS_DIR, metrics, records, keyword_reports, insight_report)
@@ -184,6 +200,11 @@ def save_results(
     # Зберігаємо звіт про оцінку (evaluation)
     if evaluation_report:
         save_evaluation_report(evaluation_report, RESULTS_DIR)
+
+    # Зберігаємо звіт про якість NLP (rating/sentiment + keyword leakage)
+    if quality_report:
+        RESULTS_DIR.mkdir(exist_ok=True)
+        save_json(RESULTS_DIR / "quality_report.json", quality_report.model_dump())
 
 
 # ---------------------------------------------------------------------------
@@ -223,17 +244,28 @@ def main() -> int:
     _progress(7, "Extracting negative keywords...")
     keyword_reports = run_keywords(records)
 
-    _progress(8, "Generating LLM insights...")
+    _progress(8, "Running NLP quality checks...")
+    try:
+        quality_report = run_quality_check_stage(records, keyword_reports)
+        if quality_report.warnings:
+            print("    -> Quality check warnings:")
+            for warning in quality_report.warnings:
+                print(f"       - {warning}")
+    except Exception as exc:
+        print(f"    -> Warning: Quality checks skipped ({exc})")
+        quality_report = None
+
+    _progress(9, "Generating LLM insights...")
     insight_report = run_insights(records)
 
-    _progress(9, "Evaluating sentiment models on reference dataset...")
+    _progress(10, "Evaluating sentiment models on reference dataset...")
     try:
         evaluation_report = run_model_evaluation()
     except Exception as exc:
         print(f"    -> Warning: Evaluation skipped ({exc})")
         evaluation_report = None
 
-    save_results(metrics, records, keyword_reports, insight_report, evaluation_report)
+    save_results(metrics, records, keyword_reports, insight_report, evaluation_report, quality_report)
 
     print("\nPipeline completed successfully.")
 

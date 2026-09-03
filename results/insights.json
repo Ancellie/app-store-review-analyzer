@@ -1,67 +1,42 @@
 {
-    "summary": "Multiple users report recurring frustrations with excessive advertising, high premium pricing, unreliable playback and playlist management, app instability, and limited control over podcast and AI content. These issues degrade the listening experience, drive users toward competitors, and increase churn risk.",
+    "summary": "The main issues reported by users are related to ads, pricing, and user experience. There are complaints about the number of ads, their frequency, and the fact that they interrupt the user's listening experience. Some users feel that the app is too expensive and that the premium subscription is not worth the cost. Others report issues with the app's performance, such as lag, crashes, and poor optimization. Additionally, some users are unhappy with the new features and changes to the app, such as the removal of the heart button and the introduction of the ",
     "insights": [
         {
-            "problem_area": "Excessive and intrusive ads in the free tier",
+            "problem_area": "Too many ads",
             "evidence": [
-                "Stop giving me five ads and only one song.",
-                "after every 1 or two song(s) that play Im hit with five ads.",
-                "Way way way too many ads and they keep playing the same annoying ads all the time",
-                "to many ads after three songs…",
-                "Too many adssssss"
+                "Every 10 minutes 3 min add",
+                "it used to be 1-2 adds after like 4 songs but now it’s out of hands. you guys are overdoing it with 3-5 ads after 3 songs",
+                "Way too many ads. Can’t even play the song you want",
+                "Too many adssssss",
+                "There are too many adds every time I pick a song I get a ad it is far to much please change it Spotify"
             ],
-            "impact": "Users are forced to listen to multiple ads after only a few songs, creating a perception of being forced to upgrade and leading to frustration, negative sentiment, and potential abandonment of the app.",
-            "recommendation": "Reduce ad frequency for free users, space ads more evenly (e.g., one ad per 3‑5 songs), improve ad relevance, and clearly communicate the ad schedule so users know what to expect."
+            "impact": "Users feel that the app is interrupted by too many ads, which can be frustrating and make it difficult to enjoy music.",
+            "recommendation": "Consider reducing the number of ads or making them less frequent to improve the user experience."
         },
         {
-            "problem_area": "Premium pricing perceived as too high",
+            "problem_area": "Pricing",
             "evidence": [
-                "The most expensive music app.",
-                "Premium isn't worth the heavy price tag.",
-                "Too many commercials and too expensive to upgrade.",
                 "I would download it and pay for it, but it’s way too expensive",
-                "Pricing ... I’d rather pay a one time price of like $200 that I have to pay a monthly subscription every single month"
+                "It sucks. I’d rather pay a one time price of like $200 that I have to pay a monthly subscription every single month for the rest of my life",
+                "been a premium user for a long time, it’s now throwing the most random music in my autoplay that i’m just going to cancel my subscription. this is dumb"
             ],
-            "impact": "Customers feel the subscription cost is unjustified, especially given ad overload, leading to churn, downgrades, or migration to cheaper competitors.",
-            "recommendation": "Reevaluate pricing tiers, introduce more flexible or lower‑cost plans, and clearly articulate the added value of premium (e.g., ad‑free, higher audio quality, exclusive features) to justify the price."
+            "impact": "Users feel that the app is too expensive and that the premium subscription is not worth the cost.",
+            "recommendation": "Consider offering a more affordable pricing option or a one-time payment plan to make the app more accessible to users."
         },
         {
-            "problem_area": "Playback, shuffle, and playlist management bugs",
+            "problem_area": "User experience",
             "evidence": [
-                "The app doesn’t seem to recognize how songs queued are supposed to play next.",
-                "My shuffle option doesn’t work.",
-                "Random setting on playing liked/favorite songs... plays the same 30 artists and the same 75 songs over and over",
-                "Half the time if I add a song, it disappears.",
-                "When I unadd songs from playlists it either does nothing or randomly repopulates with the song later."
-            ],
-            "impact": "Listeners cannot control song order or rely on playlists, causing repeated songs, lost tracks, and an overall feeling that the app is unreliable for personal curation.",
-            "recommendation": "Fix queue handling logic, overhaul the shuffle algorithm to ensure true randomness, and stabilize playlist edit operations with immediate, accurate UI feedback."
-        },
-        {
-            "problem_area": "App stability and performance issues",
-            "evidence": [
-                "App freezes all the time now switching to Apple Music so sick of all the glitches",
-                "Fix it ... keeps crashing and the music won’t load at all",
-                "Desktop app takes 6 tries to boot up properly THEN loading at least 10+ minutes",
+                "Every time I go on a app it let me play music but now today it keeps crashing and the music won’t load at all I’m getting mad pls fix it",
+                "Unstable",
                 "extremely buggy and poorly optimized, half of the functions do not work.",
-                "The app is constantly playing songs on my phone, but I cannot hear anything"
+                "it sucks now",
+                "Too many commercials"
             ],
-            "impact": "Frequent crashes, long startup times, and audio playback failures make the app unusable for many users, driving them to alternative services.",
-            "recommendation": "Prioritize performance optimization and crash‑reporting, conduct extensive QA on startup and audio pipelines, and release a stability‑focused update to address the most common crash scenarios."
-        },
-        {
-            "problem_area": "Lack of control over podcast and AI content",
-            "evidence": [
-                "There’s No Way To Block Podcasts",
-                "Premium isn’t worth ... Spotify sponsored ads inserted during podcasts that are really loud.",
-                "I didn’t ask you to get involved in podcasts and ai. It’s fine if you want to but give e the option to opt out.",
-                "Too many Spotify sponsored ads inserted during podcasts that are really loud."
-            ],
-            "impact": "Users cannot hide unwanted podcasts or opt out of AI‑driven recommendations, leading to repeated exposure to irrelevant or intrusive content and increasing dissatisfaction.",
-            "recommendation": "Introduce podcast blocking/whitelisting features, give users an opt‑out toggle for AI‑generated content, and separate third‑party podcast ads from Spotify‑owned ads to reduce perceived intrusiveness."
+            "impact": "Users report issues with the app's performance, such as lag, crashes, and poor optimization, which can be frustrating and make it difficult to use the app.",
+            "recommendation": "Consider improving the app's performance and stability to provide a better user experience."
         }
     ],
-    "model": "openai/gpt-oss-120b",
-    "method": "llm-groq",
+    "model": "llama3.1:latest",
+    "method": "llm-ollama",
     "reviews_analyzed": 50
 }

@@ -6,7 +6,14 @@ from typing import Any, Sequence
 from keybert import KeyBERT
 from sentence_transformers import SentenceTransformer
 
-from processing.keywords import NegativeTerm, NegativeTermsReport, extract_negative_texts, _STOP_WORDS
+from processing.contrastive import expand_pool_size, rerank_report_contrastively
+from processing.keywords import (
+    NegativeTerm,
+    NegativeTermsReport,
+    extract_negative_texts,
+    extract_positive_texts,
+    _STOP_WORDS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +66,11 @@ def analyze_negative_terms_keybert(
     was drawn from; ranking prioritizes ``document_frequency`` (how many
     separate reviews raise it) over raw similarity, so a phrase repeated
     across many reviews outranks one review's unusually strong phrase.
+
+    Note: this ranks by similarity/frequency *within the negative corpus
+    only*. See ``processing.contrastive.rerank_report_contrastively`` for
+    the second pass that compares against positive reviews, applied by
+    the convenience wrapper below.
 
     Args:
         texts: Text of reviews already identified as negative.
@@ -137,6 +149,20 @@ def analyze_negative_keywords_and_phrases_keybert(
     max_keywords: int = 15,
     max_phrases: int = 15,
 ) -> NegativeTermsReport:
-    """Convenience wrapper: filter records to negative reviews, then analyze."""
-    texts = extract_negative_texts(records, sentiment_field=sentiment_field, text_field=text_field)
-    return analyze_negative_terms_keybert(texts, max_keywords=max_keywords, max_phrases=max_phrases)
+    """Filter records to negative reviews, extract KeyBERT candidates over"""
+    negative_texts = extract_negative_texts(records, sentiment_field=sentiment_field, text_field=text_field)
+    positive_texts = extract_positive_texts(records, sentiment_field=sentiment_field, text_field=text_field)
+
+    raw_report = analyze_negative_terms_keybert(
+        negative_texts,
+        max_keywords=expand_pool_size(max_keywords),
+        max_phrases=expand_pool_size(max_phrases),
+    )
+
+    return rerank_report_contrastively(
+        raw_report,
+        negative_texts=negative_texts,
+        positive_texts=positive_texts,
+        max_keywords=max_keywords,
+        max_phrases=max_phrases,
+    )
