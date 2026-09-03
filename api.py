@@ -18,6 +18,8 @@ from processing.visualization import (
     render_sentiment_distribution,
     render_sentiment_by_rating,
     render_top_negative_terms,
+    render_confusion_matrix,
+    render_all_confusion_matrices,
 )
 
 from collector.fetchlayer_client import FetchLayerReviewClient
@@ -388,6 +390,91 @@ def top_negative_terms_chart(
         media_type="image/png",
     )
 
+
+@app.get(
+    "/api/visualizations/confusion-matrix",
+    summary="Confusion matrix for a sentiment method",
+)
+def confusion_matrix_chart(method: str = "transformer"):
+    if method not in {"vader", "transformer", "llm"}:
+        raise HTTPException(
+            status_code=400,
+            detail="method must be one of: vader, transformer, llm.",
+        )
+
+    evaluation_file = RESULTS_DIR / "evaluation.json"
+
+    if not evaluation_file.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Evaluation results not found. Run `python -m processing.evaluation` first.",
+        )
+
+    with open(evaluation_file, "r", encoding="utf-8") as f:
+        evaluation = json.load(f)
+
+    model_evaluation = evaluation.get("models", {}).get(method)
+    if model_evaluation is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No evaluation results found for method '{method}'.",
+        )
+
+    titles = {
+        "vader": "Confusion Matrix — VADER",
+        "transformer": "Confusion Matrix — Transformer",
+        "llm": "Confusion Matrix — LLM",
+    }
+
+    image = render_confusion_matrix(
+        confusion_matrix=model_evaluation["confusion_matrix"],
+        labels=evaluation["labels"],
+        title=titles[method],
+    )
+
+    return Response(
+        content=image,
+        media_type="image/png",
+    )
+
+
+@app.get(
+    "/api/visualizations/confusion-matrices-comparison",
+    summary="Compare confusion matrices for all sentiment methods",
+)
+def confusion_matrices_comparison_chart():
+    evaluation_file = RESULTS_DIR / "evaluation.json"
+
+    if not evaluation_file.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Evaluation results not found. Run `python -m processing.evaluation` first.",
+        )
+
+    with open(evaluation_file, "r", encoding="utf-8") as f:
+        evaluation = json.load(f)
+
+    matrices = {}
+    models_to_fetch = ["vader", "transformer", "llm"]
+
+    for method in models_to_fetch:
+        model_evaluation = evaluation.get("models", {}).get(method)
+        if not model_evaluation:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Evaluation data missing for method '{method}'.",
+            )
+        matrices[method] = model_evaluation["confusion_matrix"]
+
+    image = render_all_confusion_matrices(
+        matrices=matrices,
+        labels=evaluation["labels"],
+    )
+
+    return Response(
+        content=image,
+        media_type="image/png",
+    )
 
 @app.get(
     "/dashboard",

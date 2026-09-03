@@ -9,6 +9,8 @@ import matplotlib
 matplotlib.use("Agg")  # non-interactive backend; required for server-side rendering
 
 import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.metrics import ConfusionMatrixDisplay
 
 logger = logging.getLogger(__name__)
 
@@ -131,4 +133,46 @@ def render_top_negative_terms(terms: Sequence[dict[str, Any]], title: str, top_n
         ax.set_xlabel("Score")
 
     ax.set_title(title)
+    return _figure_to_png_bytes(fig)
+
+
+def render_confusion_matrix(
+    confusion_matrix: Sequence[Sequence[int]],
+    labels: Sequence[str],
+    title: str,
+) -> bytes:
+
+    cm = np.asarray(confusion_matrix)
+
+    fig, ax = plt.subplots(figsize=_FIGSIZE)
+    display = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=list(labels))
+    display.plot(ax=ax, cmap="Blues", colorbar=False, values_format="d")
+    ax.set_title(title)
+
+    return _figure_to_png_bytes(fig)
+
+
+def render_all_confusion_matrices(
+        matrices: dict[str, Sequence[Sequence[int]]],
+        labels: Sequence[str],
+        title: str = "Confusion Matrices Comparison",
+) -> bytes:
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+
+    models = ["vader", "transformer", "llm"]
+    titles = {
+        "vader": "VADER",
+        "transformer": "Transformer",
+        "llm": "LLM"
+    }
+
+    for ax, model_name in zip(axes, models):
+        cm = np.asarray(matrices[model_name])
+        display = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=list(labels))
+        display.plot(ax=ax, cmap="Blues", colorbar=False, values_format="d")
+        ax.set_title(titles.get(model_name, model_name))
+
+    fig.suptitle(title, fontsize=16)
+    plt.tight_layout()
+
     return _figure_to_png_bytes(fig)
